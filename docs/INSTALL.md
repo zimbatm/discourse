@@ -32,24 +32,30 @@ It goes something like this:
 
 ```
 sudo apt-add-repository ppa:brightbox/ruby-ng
+sudo add-apt-repository ppa:chris-lea/node.js
 sudo apt-get update
-sudo apt-get install git ruby1.9.3 nginx postgresql postgresql-contrib libpq-dev redis-server build-essential libxml2-dev libxslt-dev tmux
+sudo apt-get install git ruby1.9.3 nodejs nginx postgresql postgresql-contrib libpq-dev redis-server build-essential libxml2-dev libxslt-dev tmux
 sudo su - postgres
 psql
-CREATE EXTENSION IF NOT EXISTS hstore;
 create database discourse;
 CREATE ROLE discourse login createdb;
+^D
+psql -d discourse
+CREATE EXTENSION IF NOT EXISTS hstore;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 ^D^D
 git clone https://github.com/discourse/discourse.git
 cd discourse
-# disable extensions activation here because you need superuser
+# disable extensions activation here because you need superuser, maybe not needed
 sed -e 's/execute "CREATE EXTENSION/#execute "CREATE EXTENSION/g' -i db/migrate/*
 cp config/database.yml.sample config/database.yml
-cat config/database.yml.sample | sed "s/discourse_development/discourse/g" > config/database.yml
+cat config/database.yml.sample | sed -e "s/discourse_development/discourse/g" -e "s/production.localhost/127.0.0.1/g" > config/database.yml
 bundle install --deployment --without development test
 export RAILS_ENV=production
 export SECRET_TOKEN=`bundle exec rake secret`
-RAILS_ENV=production bundle exec rake db:migrate db:seed_fu
+bundle exec rake db:migrate db:seed_fu
+bundle exec rake assets:precompile
 # Fail !
-# PG::Error: ERROR:  could not open extension control file "/usr/share/postgresql/9.1/extension/hstore.control": No such file or directory
+# Command failed with status (): [/usr/bin/ruby1.9.1 /home/ubuntu/discourse/...]
+
 ```
