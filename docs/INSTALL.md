@@ -26,3 +26,27 @@ Until then, if you are feeling adventurous you can try to set up following compo
 
 
 
+# Ubuntu Precise64 on a single server as of 3 Apr 2013
+
+It goes something like this:
+
+```
+sudo apt-add-repository ppa:brightbox/ruby-ng
+sudo apt-get update
+sudo apt-get install git ruby1.9.3 libpq-dev nginx postgresql redis-server build-essential libxml2-dev libxslt-dev tmux
+sudo su - postgres
+psql
+create database discourse;
+create role discourse login createdb;
+^D^D
+git clone https://github.com/discourse/discourse.git
+cd discourse
+cp config/database.yml.sample config/database.yml
+cat config/database.yml.sample | sed "s/discourse_development/discourse/g" > config/database.yml
+bundle install --deployment --without development test
+export RAILS_ENV=production
+export SECRET_TOKEN=`bundle exec rake secret`
+RAILS_ENV=production bundle exec rake db:migrate db:seed_fu
+# Fail !
+# PG::Error: ERROR:  could not open extension control file "/usr/share/postgresql/9.1/extension/hstore.control": No such file or directory
+```
