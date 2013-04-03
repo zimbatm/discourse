@@ -45,7 +45,8 @@ CREATE EXTENSION IF NOT EXISTS hstore;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 ^D^D
 git clone https://github.com/discourse/discourse.git
-cd discourse
+sudo mv discourse /srv
+cd /srv/discourse
 # disable extensions activation here because you need superuser, maybe not needed
 sed -e 's/execute "CREATE EXTENSION/#execute "CREATE EXTENSION/g' -i db/migrate/*
 cp config/database.yml.sample config/database.yml
@@ -54,8 +55,18 @@ bundle install --deployment --without development test
 export RAILS_ENV=production
 export SECRET_TOKEN=`bundle exec rake secret`
 bundle exec rake db:migrate db:seed_fu
-bundle exec rake assets:precompile
-# Fail !
-# Command failed with status (): [/usr/bin/ruby1.9.1 /home/ubuntu/discourse/...]
+# this was failing because it's sub-call wan't run with `bundle exec`
+#bundle exec rake assets:precompile
+bundle exec rake assets:precompile:all RAILS_ENV=production RAILS_GROUPS=assets
+bundle exec thin start -s4 -S/srv/discourse/tmp/sockets/thin.sock
+
+cat config/nginx.sample.conf | sed -e 's|/var/www|/srv|g' | sudo tee /etc/nginx/sites-available/discourse.conf
+sudo ln -s ../sites-available/discourse.conf /etc/nginx/sites-enabled/discourse.conf
+sudo rm /etc/nginx/sites-available/default
+sudo service nginx restart
+tmux
+# Run the other lines that are in the Procfile
+
+
 
 ```
