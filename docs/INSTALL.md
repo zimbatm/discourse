@@ -33,14 +33,17 @@ It goes something like this:
 ```
 sudo apt-add-repository ppa:brightbox/ruby-ng
 sudo apt-get update
-sudo apt-get install git ruby1.9.3 libpq-dev nginx postgresql redis-server build-essential libxml2-dev libxslt-dev tmux
+sudo apt-get install git ruby1.9.3 nginx postgresql postgresql-contrib libpq-dev redis-server build-essential libxml2-dev libxslt-dev tmux
 sudo su - postgres
 psql
+CREATE EXTENSION IF NOT EXISTS hstore;
 create database discourse;
-create role discourse login createdb;
+CREATE ROLE discourse login createdb;
 ^D^D
 git clone https://github.com/discourse/discourse.git
 cd discourse
+# disable extensions activation here because you need superuser
+sed -e 's/execute "CREATE EXTENSION/#execute "CREATE EXTENSION/g' -i db/migrate/*
 cp config/database.yml.sample config/database.yml
 cat config/database.yml.sample | sed "s/discourse_development/discourse/g" > config/database.yml
 bundle install --deployment --without development test
