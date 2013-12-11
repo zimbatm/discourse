@@ -57,21 +57,22 @@ module Email
       if @message.multipart?
         @message.parts.each do |p|
           if p.content_type =~ /text\/plain/
-            @body = p.body.to_s
+            @body = to_utf8(p.body)
             return @body
           elsif p.content_type =~ /text\/html/
-            html = p.body.to_s
+            html = to_utf8(p.body)
           end
         end
       end
-
-      html = @message.body.to_s if @message.content_type =~ /text\/html/
+      if @message.content_type =~ /text\/html/
+        html = to_utf8(@message.body)
+      end
       if html.present?
         @body = scrub_html(html)
         return @body
       end
 
-      @body = @message.body.to_s.strip
+      @body = to_utf8(@message.body).strip
 
       # Certain trigger phrases that means we didn't parse correctly
       @body = nil if @body =~ /Content\-Type\:/ ||
@@ -79,6 +80,10 @@ module Email
                      @body =~ /text\/plain/
 
       @body
+    end
+
+    def to_utf8(obj)
+      obj.to_s.encode("UTF-8", undef: :replace, invalid: :replace)
     end
 
     def scrub_html(html)
